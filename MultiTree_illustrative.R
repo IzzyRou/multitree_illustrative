@@ -1,6 +1,10 @@
+#illustrating methods in Routledge, Isobel, et al. "Estimating spatiotemporally varying malaria reproduction numbers in a near elimination setting." Nature communications 9.1 (2018): 2476.
+
 library(parallel)
 library(lubridate)
-#illustrating methods in Routledge, Isobel, et al. "Estimating spatiotemporally varying malaria reproduction numbers in a near elimination setting." Nature communications 9.1 (2018): 2476.
+library(data.table)
+library(mgcv)
+library(fitdistrplus)
 
 
 ##################
@@ -20,7 +24,7 @@ d<-d[complete.cases(d),]
 d$Date.symptoms<-decimal_date(as.Date(d$Date, format="%d/%m/%Y"))
 d$Date.symptoms[duplicated(d$Date.symptoms)]=d$Date.symptoms[duplicated(d$Date.symptoms)]+0.1
 
-library(data.table)
+
 d$Month<-as.numeric(t(as.data.table(strsplit(d$Date,'/')))[,2])
 
 d<-d[order(d$Date.symptoms),]
@@ -40,8 +44,12 @@ d$Date.symptoms<-d$Date.symptoms*365
 data<-list(n=nrow(d),q=length(NI),NI=as.numeric(NI),t=d$Date.symptoms)
 
 #######################
-# define wc function
+# define wc (serial interval) function
 ######################
+# t = time of symptom onset
+# shift = minumum incubation period
+# a = alpha (shaping)parameter
+# epsilon = epsilon edge (unobserved infection source)
 
 wc<-function(t,shift,a,epsilon) {
   t=t-shift
@@ -152,7 +160,7 @@ mean(d$Rt)
 #######################################
 
 f=data.frame(x=d$Date.symptoms.year,y=colSums(As,na.rm=TRUE))
-library(mgcv)
+
 g=gam(y~s(x),data=f)  
 
 plot(f,type='b',pch=16,col='red',xlab='Date',ylab='R')
@@ -207,7 +215,7 @@ text(y=y,x=-2, cex=0.5,
 Rt<-colSums(As)
 Rt[Rt==0]<-1e-4
 
-library(fitdistrplus)
+
 fitg <- fitdist(Rt, "gamma")
 fitg$aic
 fitg <- fitdist(Rt, "exp")
@@ -232,7 +240,10 @@ mean(rgamma(10000,shape=fitg$estimate[1],rate=rate))
 
 cbind(2016:2030,predict.gam(g,newdata=data.frame(x=2016:2030)))
 
-#### Izzy month analysis
+##########################
+## Analysing Rc by month
+##########################
+
 Rt_mat<-matrix(nrow=12,ncol=length(A_list))
 for(i in 1:length(A_list)){
   A2=A_list[[i]][[1]]
