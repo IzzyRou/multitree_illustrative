@@ -5,7 +5,7 @@ library(lubridate)
 library(data.table)
 library(mgcv)
 library(fitdistrplus)
-
+library(foreach)
 
 ##################
 #load fake line list
